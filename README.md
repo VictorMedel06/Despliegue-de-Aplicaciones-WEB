@@ -30,7 +30,8 @@ Actualiza el sistema:
 
 ```bash
 sudo apt update && sudo apt -y upgrade
-```![Uploading image.png…]()
+```md
+![Actualización del sistema](images/1.png)
 
 
 Instala herramientas básicas:
