@@ -31,7 +31,7 @@ Actualiza el sistema:
 ```bash
 sudo apt update && sudo apt -y upgrade
 ```md
-![Actualización del sistema](images/1.png)
+FOTO1
 
 
 Instala herramientas básicas:
@@ -40,7 +40,7 @@ Instala herramientas básicas:
 sudo apt -y install curl wget unzip git
 ```
 
-(FOTO)
+FOTO2
 
 ---
 
