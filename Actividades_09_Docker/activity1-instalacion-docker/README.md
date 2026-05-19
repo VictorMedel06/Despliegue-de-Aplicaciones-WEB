@@ -421,16 +421,8 @@ docker images
 
 ---
 
-**Autor:** José Ángel Aquino Tayllefert  
+**Autor:** Victor Medel Martin 
 **Fecha:** Curso 2025/26  
-**Estado:** ✅ Completado
 
 ---
 
-<div align="center">
-
-**¡Felicidades! Docker está instalado y funcionando correctamente 🎉**
-
-**[⬆ Volver arriba](#-activity-1---instalación-de-docker)**
-
-</div>
