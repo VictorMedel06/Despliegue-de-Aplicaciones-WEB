@@ -4,8 +4,7 @@ Práctica del 2º trimestre — Despliegue de Aplicaciones Web (DAW 2025/26)
 
 **Víctor Medel Martín**
 
-> Trabajo realizado en pareja con David Garrido Suárez. Cada uno mantiene
-> su propia documentación en su repositorio.
+
 
 ---
 
