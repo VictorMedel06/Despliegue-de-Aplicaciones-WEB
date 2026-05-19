@@ -790,16 +790,9 @@ Una vez completada esta actividad:
 
 ---
 
-**Autor:** José Ángel Aquino Tayllefert  
+**Autor:** Víctor Medel Martin 
 **Fecha:** Curso 2025/26  
 **Estado:** ✅ Completado
 
 ---
 
-<div align="center">
-
-**¡Felicidades! Has dominado Docker Compose 🎉**
-
-**[⬆ Volver arriba](#-activity-5---docker-compose)**
-
-</div>
