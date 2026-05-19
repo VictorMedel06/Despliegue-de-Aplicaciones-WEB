@@ -955,7 +955,7 @@ docker rmi python-app:1.0 nodejs-app:1.0 nodejs-multistage:1.0 nodejs-best-pract
 
 ---
 
-**Autor:** José Ángel Aquino Tayllefert  
+**Autor:** Víctor Medel Martin
 **Fecha:** Curso 2025/26  
 **Estado:** ✅ Completado - Tema 5 Finalizado
 
@@ -973,8 +973,3 @@ docker rmi python-app:1.0 nodejs-app:1.0 nodejs-multistage:1.0 nodejs-best-pract
 - ✅ Docker Compose
 - ✅ Creación de imágenes
 
-**¡Listo para producción!** 🚀
-
-**[⬆ Volver arriba](#-activity-6---creación-de-imágenes-docker)**
-
-</div>
