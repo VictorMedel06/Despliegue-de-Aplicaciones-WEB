@@ -607,16 +607,8 @@ Una vez completada esta actividad:
 
 ---
 
-**Autor:** José Ángel Aquino Tayllefert  
+**Autor:** Victor Medel Martin
 **Fecha:** Curso 2025/26  
-**Estado:** ✅ Completado
 
 ---
 
-<div align="center">
-
-**¡Felicidades! Has dominado los conceptos fundamentales de contenedores Docker 🎉**
-
-**[⬆ Volver arriba](#-activity-2---introducción-a-los-contenedores-docker)**
-
-</div>
