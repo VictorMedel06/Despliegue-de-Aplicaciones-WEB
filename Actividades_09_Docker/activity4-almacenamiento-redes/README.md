@@ -710,16 +710,8 @@ Una vez completada esta actividad:
 
 ---
 
-**Autor:** José Ángel Aquino Tayllefert  
+**Autor:** Víctor Medel Martin  
 **Fecha:** Curso 2025/26  
 **Estado:** ✅ Completado
 
 ---
-
-<div align="center">
-
-**¡Felicidades! Has dominado almacenamiento y redes en Docker 🎉**
-
-**[⬆ Volver arriba](#-activity-4---almacenamiento-y-redes-docker)**
-
-</div>
