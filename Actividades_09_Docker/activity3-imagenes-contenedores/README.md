@@ -600,12 +600,6 @@ docker ps -a
 
 ---
 
-**Autor:** José Ángel Aquino Tayllefert  
+**Autor:** Víctor Medel Martin
 **Curso:** 2025/26  
-**Estado:** ✅ Completado
 
-<div align="center">
-
-**¡Felicidades! Has dominado la gestión de imágenes y contenedores 🎉**
-
-</div>
