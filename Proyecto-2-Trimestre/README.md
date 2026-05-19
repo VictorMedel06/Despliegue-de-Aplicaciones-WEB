@@ -1,65 +1,64 @@
-# 🌐 Proyecto Práctico - Infraestructura de Servidor Web y Servicios de Red (DAW 2025/26)
+# Infraestructura de Servidor Web y Servicios de Red
 
-**Autor:** Victor Medel Martin
-**Sistema Operativo:** Ubuntu Desktop 24.04 LTS sobre VirtualBox
-**Configuración de red:** Adaptador Puente (Bridged Adapter)
-**IP del servidor:** 192.168.1.135
-**Dominio local:** `marisma.local`
-**Directorio del proyecto:** `~/infraestructura-web/`
+Práctica del 2º trimestre — Despliegue de Aplicaciones Web (DAW 2025/26)
 
----
+**Víctor Medel Martín**
 
-# 📑 Contenido
-
-1. Configuración inicial del entorno
-2. Instalación del stack Apache + PHP + MariaDB
-3. Automatización de creación de clientes
-4. Configuración FTP seguro, SSH y soporte Python
-5. Implementación de servidor DNS con BIND9
-6. Validaciones y pruebas finales
-7. Uso práctico del servidor
-8. Arquitectura y servicios desplegados
+> Trabajo realizado en pareja con David Garrido Suárez. Cada uno mantiene
+> su propia documentación en su repositorio.
 
 ---
 
-# ⚙️ 1. Preparación inicial del sistema
+## De qué va esta práctica
 
-## 📝 Objetivo
+El objetivo era montar, desde una máquina limpia, un servidor capaz de dar
+alojamiento web a varios clientes a la vez: cada cliente con su espacio, su
+subdominio, su base de datos y sus accesos remotos. Y que dar de alta a un
+cliente nuevo no fuera un proceso manual de veinte pasos, sino un único script.
 
-Preparar el entorno Linux actualizando paquetes, instalando herramientas esenciales y organizando la estructura base del proyecto.
+Lo monté sobre **Ubuntu Desktop 24.04 LTS** en VirtualBox, con la red en modo
+puente para que la VM tuviera IP propia en la red local.
 
-## 💻 Comandos utilizados
+| Dato | Valor |
+|---|---|
+| Sistema | Ubuntu Desktop 24.04 LTS |
+| Virtualización | VirtualBox (adaptador puente) |
+| IP del servidor | 192.168.1.135 |
+| Dominio local | `marisma.local` |
+| Carpeta de trabajo | `~/infraestructura-web/` |
+
+---
+
+## Cómo está organizado este documento
+
+He preferido contar la práctica por **fases de trabajo** en lugar de por
+servicios sueltos, porque así se entiende el orden real en que fui montando
+las cosas:
+
+1. Preparar la base (sistema + LAMP)
+2. Servicios de red (DNS, FTP, SSH, Python)
+3. Automatización (el script que lo une todo)
+4. Pruebas y uso real
+
+Al final dejo una sección con los **problemas que me fui encontrando**, porque
+creo que es lo más útil para quien repita la práctica.
+
+---
+
+## Fase 1 — La base: sistema y stack LAMP
+
+Lo primero, dejar el sistema al día y crear la estructura de carpetas del
+proyecto:
 
 ```bash
 sudo apt update && sudo apt upgrade -y
-
-sudo apt install -y \
-net-tools curl wget vim git unzip
-
+sudo apt install -y net-tools curl wget vim git unzip
 mkdir -p ~/infraestructura-web/{scripts,images,backups}
-
 cd ~/infraestructura-web
 ```
 
-## ✅ Resultado obtenido
-
-* Sistema actualizado correctamente.
-* Herramientas básicas instaladas.
-* Conectividad de red comprobada.
-* Estructura de trabajo preparada.
-
-![](images/paso1.png)
-![](images/paso2.png)
-
----
-
-# 🌐 2. Instalación de Apache2, PHP y MariaDB
-
-## 📝 Objetivo
-
-Desplegar un entorno LAMP funcional para alojar aplicaciones web dinámicas y administrar bases de datos mediante phpMyAdmin.
-
-## 💻 Instalación
+Con la base lista, instalé el stack completo de una sola tacada — Apache,
+MariaDB, PHP con sus módulos y phpMyAdmin:
 
 ```bash
 sudo apt install -y apache2 mariadb-server mariadb-client \
@@ -67,104 +66,81 @@ php php-cli php-mysql php-curl php-gd php-xml php-mbstring php-zip \
 libapache2-mod-php phpmyadmin
 ```
 
-## 🔧 Configuración adicional
+Después tocó dejar los servicios arrancando solos al encender la máquina y
+activar los módulos de Apache que iba a necesitar más adelante (`rewrite`
+para las URLs y `ssl`):
 
 ```bash
 sudo systemctl enable apache2 mariadb
 sudo systemctl start apache2 mariadb
-
 sudo a2enmod rewrite ssl
 sudo systemctl restart apache2
+```
 
-sudo ln -s /etc/phpmyadmin/apache.conf \
-/etc/apache2/conf-available/phpmyadmin.conf
+Para que phpMyAdmin fuera accesible desde el navegador enlacé su configuración
+dentro de Apache:
 
+```bash
+sudo ln -s /etc/phpmyadmin/apache.conf /etc/apache2/conf-available/phpmyadmin.conf
 sudo a2enconf phpmyadmin
 sudo systemctl reload apache2
 ```
 
-## ✅ Resultado
+Al terminar esta fase ya tenía Apache respondiendo en el puerto 80, PHP 8.3
+funcionando y phpMyAdmin entrando por el navegador.
 
-* Apache2 operativo en puerto 80.
-* PHP 8.3 configurado correctamente.
-* MariaDB funcional.
-* phpMyAdmin accesible desde navegador.
-
-![](images/paso3.png)
-![](images/paso4.png)
+![Preparación del sistema](images/paso1.png)
+![Stack LAMP instalado](images/paso2.png)
 
 ---
 
-# 🤖 3. Automatización de clientes
+## Fase 2 — Servicios de red
 
-## 📝 Objetivo
+### DNS con BIND9
 
-Desarrollar un script que automatice la creación de clientes web incluyendo:
-
-* Usuario Linux
-* Directorio web
-* VirtualHost Apache
-* Configuración DNS
-* Base de datos MySQL
-
-## 📂 Script utilizado
+Esta fue la parte que más cuidado me llevó. Monté un servidor DNS autoritativo
+local para resolver los subdominios de cada cliente, con resolución directa e
+inversa.
 
 ```bash
-~/infraestructura-web/scripts/crear_cliente.sh
+sudo apt install -y bind9 bind9-utils bind9-doc dnsutils
 ```
 
-## ▶️ Ejecución
+Las zonas las definí en `/etc/bind/named.conf.local`:
+
+- Zona directa: `marisma.local`
+- Zona inversa: `1.168.192.in-addr.arpa`
+
+Antes de dar nada por bueno, validé la configuración y la zona. Esto me ahorró
+más de un susto:
 
 ```bash
-sudo ./crear_cliente.sh cliente1 192.168.1.135
+sudo named-checkconf
+sudo named-checkzone marisma.local /etc/bind/db.marisma.local
 ```
 
-## ✅ Funcionalidades automatizadas
+![Configuración de BIND9](images/paso3.png)
+![Validación de zonas DNS](images/paso4.png)
 
-* Creación de usuario del sistema
-* Creación de directorio web personalizado
-* Página inicial automática
-* Configuración Apache VirtualHost
-* Inserción DNS automática
-* Creación de BD y usuario MySQL
-* Generación de contraseña segura
+### FTP seguro, SSH y soporte para Python
 
-![](images/paso5.png)
-![](images/paso6.png)
-
----
-
-# 🔐 4. FTP Seguro, SSH/SFTP y soporte Python
-
-## 📝 Objetivo
-
-Implementar acceso remoto seguro y permitir la ejecución de aplicaciones Python mediante Apache.
-
-## 📦 Instalación
+Para la administración remota de archivos instalé vsftpd (FTP), OpenSSH (SSH y
+SFTP) y el módulo WSGI para poder ejecutar aplicaciones Python desde Apache:
 
 ```bash
-sudo apt install -y \
-vsftpd \
-openssh-server \
-libapache2-mod-wsgi-py3
+sudo apt install -y vsftpd openssh-server libapache2-mod-wsgi-py3
 ```
 
-## 🔧 Configuración FTP
+El FTP lo configuré en `/etc/vsftpd.conf` con dos opciones clave: cifrado TLS
+y aislamiento de cada usuario en su propia carpeta (`chroot`):
 
-Archivo:
-
-```bash
-/etc/vsftpd.conf
 ```
-
-Opciones habilitadas:
-
-```bash
 ssl_enable=YES
 chroot_local_user=YES
 ```
 
-## 🔥 Firewall
+Y abrí en el firewall los puertos necesarios (FTP, SSH y el rango de puertos
+pasivos de FTP):
 
 ```bash
 sudo ufw allow 21/tcp
@@ -172,237 +148,111 @@ sudo ufw allow 22/tcp
 sudo ufw allow 40000:40100/tcp
 ```
 
-## 🐍 Activar soporte Python
+Por último activé el módulo WSGI para Python:
 
 ```bash
 sudo a2enmod wsgi
 sudo systemctl reload apache2
 ```
 
-## ✅ Resultado
-
-* FTP seguro mediante TLS.
-* Acceso SSH y SFTP funcional.
-* Aplicaciones Python ejecutándose vía mod_wsgi.
-
-![](images/paso7.png)
-![](images/paso8.png)
+![FTP seguro y SSH](images/paso5.png)
+![Soporte Python con mod_wsgi](images/paso6.png)
 
 ---
 
-# 🌍 5. Configuración DNS con BIND9
+## Fase 3 — Automatización: el script `crear_cliente.sh`
 
-## 📝 Objetivo
-
-Implementar un servidor DNS autoritativo local con resolución directa e inversa.
-
-## 📦 Instalación
-
-```bash
-sudo apt install -y \
-bind9 bind9-utils bind9-doc dnsutils
-```
-
-## 🔧 Configuración
-
-Archivo principal:
+Esta es la pieza central de la práctica. Todo lo de las fases anteriores no
+sirve de mucho si dar de alta un cliente es un proceso manual. Así que lo
+encerré todo en un único script que, con solo el nombre y la IP, deja un
+cliente completamente operativo:
 
 ```bash
-/etc/bind/named.conf.local
+sudo ./crear_cliente.sh cliente1 192.168.1.135
 ```
 
-### Zonas configuradas
+Lo que hace el script por debajo, paso a paso:
 
-* `marisma.local`
-* `1.168.192.in-addr.arpa`
+- Crea el usuario del sistema en Linux
+- Le genera su directorio web personal con una página inicial
+- Escribe el VirtualHost de Apache y lo activa
+- Inserta el registro correspondiente en la zona DNS
+- Crea una base de datos para el cliente y un usuario MySQL con permisos
+- Genera una contraseña aleatoria segura para ese usuario
 
-## 🧪 Validaciones
+El script vive en `~/infraestructura-web/scripts/crear_cliente.sh`.
 
-```bash
-sudo named-checkconf
-
-sudo named-checkzone marisma.local \
-/etc/bind/db.marisma.local
-```
-
-## 🔍 Pruebas DNS
-
-```bash
-dig @192.168.1.135 cliente1.marisma.local
-
-dig @192.168.1.135 -x 192.168.1.135
-```
-
-## ✅ Resultado
-
-* Resolución directa funcionando.
-* Resolución inversa activa.
-* Integración automática con el script de clientes.
-
-![](images/paso9.png)
-![](images/paso10.png)
+![Ejecución del script de creación de clientes](images/paso7.png)
+![Cliente dado de alta correctamente](images/paso8.png)
 
 ---
 
-# 🧪 6. Verificación integral del sistema
+## Fase 4 — Comprobación y uso real
 
-## 📋 Servicios comprobados
-
-```bash
-sudo systemctl status \
-apache2 mariadb named vsftpd ssh
-```
-
-## 🌐 Prueba HTTP
+Antes de dar la práctica por terminada, repasé que todos los servicios
+estuvieran levantados:
 
 ```bash
-curl http://192.168.1.135
+sudo systemctl status apache2 mariadb named vsftpd ssh
 ```
 
-## 🗄️ Verificación MySQL
+Y fui probando cada cosa por separado:
 
 ```bash
-sudo mysql -e "SHOW DATABASES;"
+curl http://192.168.1.135                          # Apache responde
+sudo mysql -e "SHOW DATABASES;"                     # MariaDB y las BD
+dig @192.168.1.135 cliente1.marisma.local +short    # resolución DNS directa
+dig @192.168.1.135 -x 192.168.1.135                 # resolución DNS inversa
+ssh cliente1@192.168.1.135                          # acceso remoto
 ```
 
-## 🌍 Prueba DNS
-
-```bash
-dig @192.168.1.135 cliente1.marisma.local +short
-```
-
-## 🔐 Verificación SSH
-
-```bash
-ssh cliente1@192.168.1.135
-```
-
-## ✅ Resultado final
-
-Todos los servicios quedaron operativos y funcionando correctamente de forma integrada.
-
----
-
-# 🚀 Cómo utilizar el servidor
-
-## Crear un nuevo cliente
+Una vez montado, usar el servidor es inmediato. Para un cliente nuevo:
 
 ```bash
 sudo ~/infraestructura-web/scripts/crear_cliente.sh empresa 192.168.1.135
 ```
 
-## El sistema genera automáticamente
+Y ese cliente queda accesible en:
 
-* Usuario Linux
-* Directorio web
-* VirtualHost
-* Subdominio DNS
-* Base de datos
-* Usuario MySQL
-* Contraseña aleatoria segura
+- Web: `http://empresa.marisma.local`
+- phpMyAdmin: `http://192.168.1.135/phpmyadmin`
+- SSH: `ssh empresa@192.168.1.135`
+- SFTP: `sftp empresa@192.168.1.135`
 
----
-
-# 🌐 Acceso a servicios
-
-## Cliente web
-
-```bash
-http://empresa.marisma.local
-```
-
-## phpMyAdmin
-
-```bash
-http://192.168.1.135/phpmyadmin
-```
-
-## SSH
-
-```bash
-ssh empresa@192.168.1.135
-```
-
-## SFTP
-
-```bash
-sftp empresa@192.168.1.135
-```
+![Verificación de servicios](images/paso9.png)
+![Acceso a un cliente desplegado](images/paso10.png)
 
 ---
 
-# 🏗️ Arquitectura del entorno
+## Incidencias que me encontré
 
-| Servicio      | Tecnología | Puerto   |
-| ------------- | ---------- | -------- |
-| Servidor Web  | Apache2    | 80 / 443 |
-| PHP           | PHP 8.3    | Interno  |
-| Base de Datos | MariaDB    | 3306     |
-| DNS           | BIND9      | 53       |
-| FTP Seguro    | vsftpd     | 21       |
-| Acceso remoto | OpenSSH    | 22       |
-| Python WSGI   | mod_wsgi   | Apache   |
+Dejo aquí las cosas que no salieron a la primera, por si le sirven a alguien:
 
----
-
-# 🔒 Medidas de seguridad aplicadas
-
-* FTP protegido con TLS
-* Usuarios aislados mediante chroot
-* Acceso remoto mediante SSH/SFTP
-* Contraseñas aleatorias seguras
-* Separación de bases de datos por cliente
-* Validación automática de zonas DNS
-* Permisos seguros en directorios web
+- **BIND9 no arrancaba** tras editar las zonas. La causa casi siempre era un
+  punto y coma o un punto final que faltaba en el fichero de zona.
+  `named-checkzone` te dice exactamente la línea del fallo: conviene pasarlo
+  *siempre* antes de reiniciar el servicio.
+- **El FTP con TLS daba error de conexión pasiva** hasta que abrí el rango de
+  puertos `40000:40100` en el firewall. Sin ese rango, la conexión se queda
+  colgada después del login.
+- **phpMyAdmin daba 404** al principio: me faltaba ejecutar `a2enconf` después
+  de crear el enlace simbólico.
 
 ---
 
-# 📁 Organización del proyecto
+## Arquitectura final
 
-```bash
-~/infraestructura-web/
-├── README.md
-├── scripts/
-├── images/
-└── backups/
-```
+| Servicio | Tecnología | Puerto |
+|---|---|---|
+| Servidor web | Apache2 | 80 / 443 |
+| Lenguaje dinámico | PHP 8.3 | — |
+| Base de datos | MariaDB | 3306 |
+| DNS | BIND9 | 53 |
+| FTP seguro | vsftpd | 21 |
+| Acceso remoto | OpenSSH | 22 |
+| Aplicaciones Python | mod_wsgi | (sobre Apache) |
 
----
-
-# ✅ Objetivos de la práctica completados
-
-✔ Instalación de servidor web configurable
-✔ Hosting de sitios dinámicos y estáticos
-✔ Automatización mediante scripts
-✔ Configuración DNS local
-✔ Integración MariaDB + phpMyAdmin
-✔ Acceso FTP seguro con TLS
-✔ SSH y SFTP operativos
-✔ Soporte Python mediante mod_wsgi
-✔ VirtualHosts automáticos
-✔ Gestión multiusuario
-
----
-
-# 🎓 Datos del entorno
-
-* Ubuntu 24.04 LTS
-* VirtualBox
-* Red en modo puente
-* Arquitectura x86_64
-* Dominio local: `marisma.local`
-
----
-
-# 📌 Estado del proyecto
-
-| Estado               | Resultado      |
-| -------------------- | -------------- |
-| Configuración Apache | ✅ Correcta     |
-| Configuración DNS    | ✅ Correcta     |
-| Bases de datos       | ✅ Operativas   |
-| VirtualHosts         | ✅ Funcionando  |
-| FTP/SSH              | ✅ Activos      |
-| Automatización       | ✅ Implementada |
-
----
+**Medidas de seguridad aplicadas:** FTP cifrado con TLS, usuarios aislados con
+chroot, contraseñas aleatorias por cliente, bases de datos separadas por
+cliente, validación automática de las zonas DNS y permisos restringidos en los
+directorios web.
